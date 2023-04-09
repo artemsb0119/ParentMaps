@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/textViewChild"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Мои дети"
+        android:textSize="48sp"
+        android:textAlignment="center"
+        android:background="#9040ffe9"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+<androidx.recyclerview.widget.RecyclerView
+    android:id="@+id/recyclerViewUsers"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp"
+    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+    tools:listitem="@layout/user_item"
+    android:background="#9040ffe9"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintTop_toBottomOf="@+id/textViewChild"
+    tools:context=".UsersActivity"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

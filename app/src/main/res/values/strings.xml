@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Parent Maps</string>
+    <string name="your_email">Электронная почта:</string>
+    <string name="your_password">Пароль:</string>
+    <string name="login">Войти</string>
+    <string name="forgot_password">Забыли пароль?</string>
+    <string name="register">Зарегистрироваться</string>
+    <string name="registration">Регистрация</string>
+    <string name="name">Имя:</string>
+    <string name="last_name">Фамилия:</string>
+    <string name="parent">Родитель</string>
+    <string name="baby">Ребенок</string>
+    <string name="fill_in_all_fields">Заполните все поля</string>
+    <string name="reset_password">Сброс пароля</string>
+    <string name="exit">Выйти</string>
+    <string name="reset_link">Ссылка для сброса успешно отправлена</string>
+</resources>

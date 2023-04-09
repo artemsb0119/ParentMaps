@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "998990374345",
+    "project_id": "parent-maps-274aa",
+    "storage_bucket": "parent-maps-274aa.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998990374345:android:c61b4700e596e6fddd3418",
+        "android_client_info": {
+          "package_name": "com.example.parentmaps"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "998990374345-cv6alg8qmk1v3eillcsola1rh9gdpno6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD4xl62Y8lBkBoN5Cy4wmCaHyES9rjL6gw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "998990374345-cv6alg8qmk1v3eillcsola1rh9gdpno6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

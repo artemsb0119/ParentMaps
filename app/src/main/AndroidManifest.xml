@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.parentmaps">
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/logo_main"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/logo_main"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Material3.Light.NoActionBar"
+        tools:targetApi="31">
+        <activity
+            android:name=".MapsActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false"
+            android:theme="@style/Theme.Material3.Light"/>
+        <activity
+            android:name=".UsersActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Material3.Light" />
+        <activity
+            android:name=".ResetPasswordActivity"
+            android:exported="false" />
+        <activity
+            android:name=".RegistrationActivity"
+            android:exported="false" />
+
+        <meta-data
+            android:name="com.yandex.android.maps.v3.API_KEY"
+            android:value="4659ffc0-0584-4295-9bb3-a57a4321726e" />
+        <activity
+        android:name=".LoginActivity"
+        android:exported="true"
+        android:screenOrientation="locked">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+    </application>
+
+</manifest>
