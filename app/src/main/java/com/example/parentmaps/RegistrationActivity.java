@@ -28,8 +28,6 @@ public class RegistrationActivity extends AppCompatActivity {
     private RadioButton radioButtonParent;
     private RadioButton radioButtonChild;
     private Button buttonSignUp;
-    private FirebaseDatabase database;
-    private DatabaseReference usersReference;
 
     private RegistrationViewModel viewModel;
 

@@ -17,19 +17,33 @@
             android:layout_height="40dp"
             android:layout_weight="0.1"
             android:layout_gravity="center"
-            tools:src="@drawable/child"/>
+            tools:src="@drawable/parent"/>
 
         <TextView
             android:id="@+id/textViewUserInfo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:textSize="20sp"
-            android:layout_weight="0.9"
+            android:layout_weight="0.8"
             android:padding="16dp"
             android:gravity=""
             android:textStyle="bold"
             tools:text="John Smith"
             />
+        <ImageView
+            android:id="@+id/imageViewAdd"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_weight="0.1"
+            android:layout_gravity="center"
+            tools:src="@drawable/plus"/>
+        <ImageView
+            android:id="@+id/imageViewMinus"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_weight="0.1"
+            android:layout_gravity="center"
+            tools:src="@drawable/minus"/>
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

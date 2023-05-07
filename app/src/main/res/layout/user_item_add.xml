@@ -30,6 +30,13 @@
             android:textStyle="bold"
             tools:text="John Smith"
             />
+        <ImageView
+            android:id="@+id/imageViewAdd"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_weight="0.1"
+            android:layout_gravity="center"
+            tools:src="@drawable/plus"/>
     </LinearLayout>
 
 </androidx.cardview.widget.CardView>

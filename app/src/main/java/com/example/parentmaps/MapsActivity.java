@@ -1,19 +1,14 @@
 package com.example.parentmaps;
 
-import static java.security.AccessController.getContext;
-
 import android.Manifest;
-import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.PointF;
 import android.location.Address;
 import android.location.Criteria;
 import android.location.Geocoder;
@@ -34,10 +29,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.yandex.mapkit.Animation;
 import com.yandex.mapkit.GeoObject;
 import com.yandex.mapkit.MapKit;
@@ -52,39 +54,31 @@ import com.yandex.mapkit.directions.driving.DrivingSession;
 import com.yandex.mapkit.directions.driving.VehicleOptions;
 
 
-import com.yandex.mapkit.geometry.Geometry;
 import com.yandex.mapkit.geometry.Point;
 import com.yandex.mapkit.layers.GeoObjectTapEvent;
 import com.yandex.mapkit.layers.GeoObjectTapListener;
-import com.yandex.mapkit.layers.ObjectEvent;
-import com.yandex.mapkit.map.CameraListener;
 import com.yandex.mapkit.map.CameraPosition;
-import com.yandex.mapkit.map.CameraUpdateReason;
 import com.yandex.mapkit.map.GeoObjectSelectionMetadata;
 import com.yandex.mapkit.map.InputListener;
 import com.yandex.mapkit.map.Map;
-import com.yandex.mapkit.map.MapObject;
 import com.yandex.mapkit.map.MapObjectCollection;
-import com.yandex.mapkit.map.MapObjectTapListener;
-import com.yandex.mapkit.map.PlacemarkMapObject;
 import com.yandex.mapkit.map.PolylineMapObject;
 import com.yandex.mapkit.mapview.MapView;
-import com.yandex.mapkit.transport.masstransit.PedestrianRouter;
 import com.yandex.mapkit.user_location.UserLocationLayer;
-import com.yandex.mapkit.user_location.UserLocationObjectListener;
-import com.yandex.mapkit.user_location.UserLocationView;
 import com.yandex.runtime.Error;
-import com.yandex.runtime.image.ImageProvider;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
 
 public class MapsActivity extends AppCompatActivity implements GeoObjectTapListener, InputListener, DrivingSession.DrivingRouteListener {
 
+    private SharedPreferences sharedPreferences;
     private final String MAPKIT_API_KEY = "4659ffc0-0584-4295-9bb3-a57a4321726e";
 
     private MapsViewModel viewModel;
@@ -94,7 +88,6 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
     private DrivingRouter drivingRouter;
     private DrivingSession drivingSession;
     private LocationManager locationManager;
-    private Location location;
     private Point currentLocation;
     private Point selectedLocation = new Point(0, 0);
     boolean isReachedDestination = false;
@@ -103,6 +96,9 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
     private double distanceToRoute = 0;
     private long lastNotificationTime = 0;
     private UserLocationLayer locationLayer;
+    private String lastAddress = "";
+
+    private FirebaseAuth auth;
 
     private Handler handler;
     private Runnable runnable;
@@ -110,12 +106,15 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
-        MapKitFactory.setApiKey(MAPKIT_API_KEY);
+        Intent locationServiceIntent = new Intent(this, LocationService.class);
+        stopService(locationServiceIntent);
 
+        MapKitFactory.setApiKey(MAPKIT_API_KEY);
         MapKitFactory.initialize(this);
-        // Создание MapView.
+
         setContentView(R.layout.activity_maps);
         super.onCreate(savedInstanceState);
+
         viewModel = new ViewModelProvider(this).get(MapsViewModel.class);
         observeViewModel();
         mapView = (MapView) findViewById(R.id.mapview);
@@ -127,7 +126,7 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
         LocationListener locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                if (location != null && (location.getAccuracy() < 100 || System.currentTimeMillis() - location.getTime() < 10000)) {
+                if (location != null && (location.getAccuracy() < 100)) {
                     currentLocation = new Point(location.getLatitude(), location.getLongitude());
                     mapView.getMap().move(
                             new CameraPosition(currentLocation, 14.0f, 0.0f, 0.0f),
@@ -167,7 +166,6 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
                                     .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
                             NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-                            // уведомление будет показано только если приложение находится в фоновом режиме
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                 NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
                                 notificationManager.createNotificationChannel(channel);
@@ -203,17 +201,15 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
         String provider = locationManager.getBestProvider(criteria, true);
 
         if (provider != null) {
-            locationManager.requestLocationUpdates(provider, 100, 10, locationListener);
-        }
-
-        Location location = locationManager.getLastKnownLocation(provider);
-        if (location != null) {
-            currentLocation = new Point(location.getLatitude(), location.getLongitude());
-            // Перемещение камеры к текущему местоположению пользователя.
-            mapView.getMap().move(
-                    new CameraPosition(currentLocation, 14.0f, 0.0f, 0.0f),
-                    new Animation(Animation.Type.SMOOTH, 3),
-                    null);
+            locationManager.requestLocationUpdates(provider, 1000, 10, locationListener);
+            Location location = locationManager.getLastKnownLocation(provider);
+            if (location != null) {
+                currentLocation = new Point(location.getLatitude(), location.getLongitude());
+                mapView.getMap().move(
+                        new CameraPosition(currentLocation, 14.0f, 0.0f, 0.0f),
+                        new Animation(Animation.Type.SMOOTH, 3),
+                        null);
+            }
         }
 
         mapView.getMap().addTapListener(this);
@@ -232,16 +228,22 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
 
     @Override
     protected void onStop() {
-        // Вызов onStop нужно передавать инстансам MapView и MapKit.
         mapView.onStop();
         MapKitFactory.getInstance().onStop();
+        Log.d("MapsActivity", "destroy");
+        Intent locationServiceIntent = new Intent(this, LocationService.class);
+        sharedPreferences =getSharedPreferences("my_preferences", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.putString("lastAddress", lastAddress);
+        ContextCompat.startForegroundService(this,locationServiceIntent);
         super.onStop();
     }
 
     @Override
     protected void onStart() {
-        // Вызов onStart нужно передавать инстансам MapView и MapKit.
         super.onStart();
+        Intent locationServiceIntent = new Intent(this, LocationService.class);
+        stopService(locationServiceIntent);
         MapKitFactory.getInstance().onStart();
         mapView.onStart();
     }
@@ -320,7 +322,6 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
 
             PolylineMapObject polylineMapObject = mapObjectCollection.addPolyline(route.getGeometry());
             polylineMapObject.setStrokeColor(Color.GREEN);
-            // Добавление каждой промежуточной точки маршрута в коллекцию
             routePoints.addAll(route.getGeometry().getPoints());
         }
     }
@@ -349,20 +350,62 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
             public void run() {
                 if (currentLocation != null) {
                     getAddressFromLocation(currentLocation.getLatitude(), currentLocation.getLongitude());
-                    handler.postDelayed(this, 60000); // 60,000 миллисекунд = 1 минута
+                    handler.postDelayed(this, 300000);
                 }
             }
         };
-        handler.postDelayed(runnable, 60000);
+        handler.postDelayed(runnable, 300000);
     }
 
     private void getAddressFromLocation(double latitude, double longitude) {
         Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        auth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = auth.getCurrentUser();
+        String currentUserId = currentUser.getUid();
         try {
             List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
             if (addresses != null && !addresses.isEmpty()) {
                 Address address = addresses.get(0);
-                Log.d("MapsActivity", "Current address: " + address.getAddressLine(0));
+                if (lastAddress.equals("")||!lastAddress.equals(address.getAddressLine(0))){
+                    lastAddress = address.getAddressLine(0);
+                    Log.d("iii","main");
+                    DateFormat dateFormat = new SimpleDateFormat("dd.MM HH:mm", Locale.getDefault());
+                    String currentTime = dateFormat.format(new Date());
+                    String addressString = currentTime + " " + address.getAddressLine(0);
+                    DatabaseReference databaseReferenceAdress = FirebaseDatabase.getInstance().getReference("ChildLocation").child(currentUserId).child("Adress");
+                    databaseReferenceAdress.push().setValue(addressString);
+                    databaseReferenceAdress.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (snapshot.getChildrenCount() > 100) {
+                                DataSnapshot firstChild = snapshot.getChildren().iterator().next();
+                                firstChild.getRef().removeValue();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
+                    DatabaseReference databaseReferenceLocate = FirebaseDatabase.getInstance().getReference("ChildLocation").child(currentUserId).child("Locate");
+                    databaseReferenceLocate.push().setValue(currentLocation);
+                    databaseReferenceLocate.addListenerForSingleValueEvent(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            if (snapshot.getChildrenCount() > 100) {
+                                DataSnapshot firstChild = snapshot.getChildren().iterator().next();
+                                firstChild.getRef().removeValue();
+                            }
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
+
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -399,12 +442,16 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.child_menu, menu);
+        getMenuInflater().inflate(R.menu.maps_menu, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.item_Add) {
+            Intent intent = RequestActivity.newIntent(MapsActivity.this);
+            startActivity(intent);
+        }
         if (item.getItemId() == R.id.item_Logout) {
             viewModel.logout();
         }

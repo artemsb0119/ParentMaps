@@ -16,17 +16,17 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UsersViewModel extends ViewModel {
+public class RequestViewModel extends ViewModel {
 
     private FirebaseAuth auth;
     private FirebaseDatabase database;
     private DatabaseReference usersReference;
+    private DatabaseReference friendshipsReference;
     private DatabaseReference friendReference;
-
     private MutableLiveData<FirebaseUser> user = new MutableLiveData<>();
     private MutableLiveData<List<User>> users = new MutableLiveData<>();
 
-    public UsersViewModel() {
+    public RequestViewModel() {
         auth = FirebaseAuth.getInstance();
         auth.addAuthStateListener(new FirebaseAuth.AuthStateListener() {
             @Override
@@ -36,27 +36,27 @@ public class UsersViewModel extends ViewModel {
         });
         database = FirebaseDatabase.getInstance();
         usersReference = database.getReference("Users");
-        friendReference = database.getReference("Friends");
-        friendReference.addValueEventListener(new ValueEventListener() {
+        friendshipsReference = database.getReference("FriendRequests");
+        friendshipsReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 FirebaseUser currentUser = auth.getCurrentUser();
                 if (currentUser == null) {
                     return;
                 }
-                List<Friends> friend = new ArrayList<>();
+                List<Friendship> friendships = new ArrayList<>();
                 for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    Friends friends = dataSnapshot.getValue(Friends.class);
-                    if (friends == null) {
+                    Friendship friendship = dataSnapshot.getValue(Friendship.class);
+                    if (friendship == null) {
                         continue;
                     }
-                    if (friends.getUserId2().equals(currentUser.getUid())) {
-                        friend.add(friends);
+                    if (friendship.getReceiverId().equals(currentUser.getUid())&&friendship.getStatus().equals("в ожидании")) {
+                        friendships.add(friendship);
                     }
                 }
                 List<User> usersFromDb = new ArrayList<>();
-                for (Friends friends : friend) {
-                    usersReference.child(friends.getUserId1()).addValueEventListener(new ValueEventListener() {
+                for (Friendship friendship : friendships) {
+                    usersReference.child(friendship.getSenderId()).addValueEventListener(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
                             User user = snapshot.getValue(User.class);
@@ -80,6 +80,7 @@ public class UsersViewModel extends ViewModel {
 
             }
         });
+
     }
 
     public LiveData<List<User>> getUsers() {
@@ -90,7 +91,28 @@ public class UsersViewModel extends ViewModel {
         return user;
     }
 
-    public void logout() {
-        auth.signOut();
+    public void addUser(User user) {
+        DatabaseReference friendshipsStatus = database.getReference("FriendRequests").child(user.getId()).child("status");
+        friendshipsStatus.setValue("принят");
+
+        FirebaseUser currentUser = auth.getCurrentUser();
+        String currentUserId = currentUser.getUid();
+        String addedUserId = user.getId();
+
+        Friends friends = new Friends(currentUserId, addedUserId);
+        database.getReference("Friends").child(currentUserId).setValue(friends);
+
+        List<User> currentUsers = users.getValue();
+        currentUsers.remove(user);
+        users.setValue(currentUsers);
+    }
+
+    public void deleteUser(User user) {
+        DatabaseReference friendshipsStatus = database.getReference("FriendRequests").child(user.getId()).child("status");
+        friendshipsStatus.setValue("отклонен");
+
+        List<User> currentUsers = users.getValue();
+        currentUsers.remove(user);
+        users.setValue(currentUsers);
     }
 }

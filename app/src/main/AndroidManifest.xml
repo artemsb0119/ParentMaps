@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <application
         android:allowBackup="true"
@@ -19,10 +21,35 @@
         android:theme="@style/Theme.Material3.Light.NoActionBar"
         tools:targetApi="31">
         <activity
+            android:name=".FavouriteActivity"
+            android:exported="false" />
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false" />
+        <activity
+            android:name=".ChildActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Material3.Light" />
+
+        <service
+            android:name=".LocationService"
+            android:enabled="true"
+            android:exported="false" />
+
+        <activity
+            android:name=".RequestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Material3.Light.NoActionBar" />
+        <activity
+            android:name=".SearchActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false"
+            android:theme="@style/Theme.Material3.Light" />
+        <activity
             android:name=".MapsActivity"
             android:configChanges="orientation|screenSize"
             android:exported="false"
-            android:theme="@style/Theme.Material3.Light"/>
+            android:theme="@style/Theme.Material3.Light" />
         <activity
             android:name=".UsersActivity"
             android:exported="false"
@@ -37,16 +64,17 @@
         <meta-data
             android:name="com.yandex.android.maps.v3.API_KEY"
             android:value="4659ffc0-0584-4295-9bb3-a57a4321726e" />
-        <activity
-        android:name=".LoginActivity"
-        android:exported="true"
-        android:screenOrientation="locked">
-        <intent-filter>
-            <action android:name="android.intent.action.MAIN" />
 
-            <category android:name="android.intent.category.LAUNCHER" />
-        </intent-filter>
-    </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true"
+            android:screenOrientation="locked">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

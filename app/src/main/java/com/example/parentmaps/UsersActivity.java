@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -24,9 +25,6 @@ public class UsersActivity extends AppCompatActivity {
     private UsersAdapter usersAdapter;
     private UsersViewModel viewModel;
 
-    private FirebaseDatabase firebaseDatabase = FirebaseDatabase.getInstance();
-    private DatabaseReference databaseReference = firebaseDatabase.getReference("Users");
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -34,7 +32,14 @@ public class UsersActivity extends AppCompatActivity {
         initViews();
         viewModel = new ViewModelProvider(this).get(UsersViewModel.class);
         observeViewModel();
-
+        usersAdapter.setOnUserClickListener(new UsersAdapter.OnUserClickListener() {
+            @Override
+            public void onUserClick(User user) {
+                Intent intent = ChildActivity.newIntent(UsersActivity.this);
+                intent.putExtra("user", user.getId());
+                startActivity(intent);
+            }
+        });
     }
 
     private void initViews() {
@@ -74,6 +79,10 @@ public class UsersActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.item_search) {
+            Intent intent = SearchActivity.newIntent(UsersActivity.this);
+            startActivity(intent);
+        }
         if (item.getItemId() == R.id.item_Logout) {
             viewModel.logout();
         }
