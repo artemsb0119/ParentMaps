@@ -49,7 +49,7 @@ public class ChildViewModel extends AndroidViewModel {
                     String address = addressSnapshot.getValue(String.class);
                     adressesDB.add(address);
                 });
-                if (adressesDB!=null) {
+                if (!adressesDB.isEmpty()) {
                     nowLocate.setValue(adressesDB.get(adressesDB.size()-1).substring(12));
                     adressesDB.remove(adressesDB.size() - 1);
                     Collections.reverse(adressesDB);

@@ -122,7 +122,7 @@ public class LocationService extends Service {
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel notificationChannel = new NotificationChannel(
-                    "channel_id",
+                    "channel_id1",
                     "channel_name",
                     NotificationManager.IMPORTANCE_DEFAULT
             );
@@ -131,50 +131,11 @@ public class LocationService extends Service {
     }
 
     public Notification createNotification() {
-        Notification builder = new NotificationCompat.Builder(this, "channel_id")
+        Notification builder = new NotificationCompat.Builder(this, "channel_id1")
                 .setSmallIcon(R.drawable.icon_map)
                 .setContentTitle("Приложение отслеживает текущее местоположение")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .build();
         return builder;
     }
-
-    /*private void startGettingAddress() {
-        handler = new Handler();
-        runnable = new Runnable() {
-            @Override
-            public void run() {
-                Log.d("iii","do");
-                if (currentLocation != null) {
-                    getAddressFromLocation(currentLocation.getLatitude(), currentLocation.getLongitude());
-                }
-                handler.postDelayed(this, 60000);
-            }
-        };
-        handler.postDelayed(runnable, 60000);
-    }
-
-
-    private void getAddressFromLocation(double latitude, double longitude) {
-        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-        auth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = auth.getCurrentUser();
-        String currentUserId = currentUser.getUid();
-        try {
-            List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
-            if (addresses != null && !addresses.isEmpty()) {
-                Address address = addresses.get(0);
-                if (lastAddress.equals("")||!lastAddress.equals(address.getAddressLine(0))) {
-                    lastAddress = address.getAddressLine(0);
-                    DateFormat dateFormat = new SimpleDateFormat("dd.MM HH:mm", Locale.getDefault());
-                    String currentTime = dateFormat.format(new Date());
-                    String addressString = currentTime + " " + address.getAddressLine(0);
-                    DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference("ChildLocation").child(currentUserId);
-                    databaseReference.push().setValue(addressString);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }*/
 }

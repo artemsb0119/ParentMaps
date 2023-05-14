@@ -91,6 +91,7 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
     private Point currentLocation;
     private Point selectedLocation = new Point(0, 0);
     boolean isReachedDestination = false;
+    boolean isReachedPoint = false;
     private MapObjectCollection mapObjectCollection;
     private ArrayList<Point> routePoints = new ArrayList<>();
     private double distanceToRoute = 0;
@@ -102,6 +103,10 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
 
     private Handler handler;
     private Runnable runnable;
+    private FirebaseDatabase database;
+    private DatabaseReference notificateReference;
+    private DatabaseReference friendsReference;
+    private List<Point> points;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,6 +119,30 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
 
         setContentView(R.layout.activity_maps);
         super.onCreate(savedInstanceState);
+        points = new ArrayList<>();
+        auth = FirebaseAuth.getInstance();
+        FirebaseUser currentUser = auth.getCurrentUser();
+        String currentUserId = currentUser.getUid();
+        database = FirebaseDatabase.getInstance();
+        notificateReference = database.getReference("Notificate").child(currentUserId);
+        notificateReference.child("Locate").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                for (DataSnapshot coordinateSnapshot : snapshot.getChildren()) {
+                    Double latitude = coordinateSnapshot.child("latitude").getValue(Double.class);
+                    Double longitude = coordinateSnapshot.child("longitude").getValue(Double.class);
+                    if (latitude != null && longitude != null) {
+                        Point point = new Point(latitude, longitude);
+                        points.add(point);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+
+            }
+        });
 
         viewModel = new ViewModelProvider(this).get(MapsViewModel.class);
         observeViewModel();
@@ -133,46 +162,37 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
                             new Animation(Animation.Type.SMOOTH, 3),
                             null);
                     double distance = distanceBetweenPoints(currentLocation, selectedLocation);
-                    Log.d("MapsActivity", String.valueOf(distance));
+
+                    for (Point point:points) {
+                        double distancePoint = distanceBetweenPoints(currentLocation, point);
+                        if (distancePoint <0.2 && !isReachedPoint) {
+                            isReachedPoint = true;
+                            friendsReference = database.getReference("SendNotificate").child(currentUserId);
+                            friendsReference.setValue("Пользователь достиг точки");
+                        }
+                        if (distancePoint >0.5 && isReachedPoint) {
+                            isReachedPoint = false;
+                            friendsReference = database.getReference("SendNotificate").child(currentUserId);
+                            friendsReference.setValue("Пользователь отдалился от точки");
+                        }
+                    }
+
                     if (routePoints.size() > 0) {
                         distanceToRoute = distanceBetweenPoints(currentLocation, getNearestPointOnRoute(currentLocation));
                         Log.d("MapsActivity", String.valueOf("marshrut " + distanceToRoute));
-                    }
-                    if (distance < 0.02 && !isReachedDestination) {
-                        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
-                                .setSmallIcon(R.drawable.icon_map)
-                                .setContentTitle("Вы прибыли")
-                                .setContentText("Вы достигли конечной точки маршрута.")
-                                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                        if (distance < 0.02 && !isReachedDestination) {
+                            friendsReference = database.getReference("SendNotificate").child(currentUserId);
+                            friendsReference.setValue("Пользователь достиг конечной точки");
 
-                        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
-                            notificationManager.createNotificationChannel(channel);
-                        }
+                            isReachedDestination = true;
 
-                        notificationManager.notify(1, builder.build());
-
-                        isReachedDestination = true;
-
-                        mapObjectCollection.clear();
-                        distanceToRoute = 0;
-                    } else if (distanceToRoute > 1) {
-                        if (System.currentTimeMillis() - lastNotificationTime > 180000) {
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
-                                    .setSmallIcon(R.drawable.icon_map)
-                                    .setContentTitle("Вы отклонились от маршрута")
-                                    .setContentText("Пожалуйста, вернитесь на маршрут.")
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
-
-                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
-                                notificationManager.createNotificationChannel(channel);
+                            mapObjectCollection.clear();
+                            distanceToRoute = 0;
+                        } else if (distanceToRoute > 1) {
+                            if (System.currentTimeMillis() - lastNotificationTime > 180000) {
+                                friendsReference = database.getReference("SendNotificate").child(currentUserId);
+                                friendsReference.setValue("Пользователь отклонился от маршрута");
                             }
-
-                            notificationManager.notify(1, builder.build());
-                            lastNotificationTime = System.currentTimeMillis();
                         }
                     }
                 }
@@ -268,7 +288,6 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
             builder.setMessage("Построить маршрут до выбранной точки?");
             builder.setPositiveButton("Да", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int id) {
-                    // Если пользователь подтвердил, строим маршрут
                     mapObjectCollection.clear();
                     isReachedDestination = false;
                     sumbitRequest();
@@ -377,7 +396,7 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
                     databaseReferenceAdress.addListenerForSingleValueEvent(new ValueEventListener() {
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            if (snapshot.getChildrenCount() > 100) {
+                            if (snapshot.getChildrenCount() > 500) {
                                 DataSnapshot firstChild = snapshot.getChildren().iterator().next();
                                 firstChild.getRef().removeValue();
                             }

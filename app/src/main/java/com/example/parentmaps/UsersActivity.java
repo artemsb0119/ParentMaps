@@ -1,14 +1,22 @@
 package com.example.parentmaps;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.RecyclerView;
@@ -16,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.yandex.mapkit.MapKitFactory;
 
 import java.util.List;
 
@@ -27,6 +36,8 @@ public class UsersActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Intent usersServiceIntent = new Intent(this, UsersService.class);
+        stopService(usersServiceIntent);
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_users);
         initViews();
@@ -65,6 +76,38 @@ public class UsersActivity extends AppCompatActivity {
                 usersAdapter.setUsers(users);
             }
         });
+        viewModel.getNotificate().observe(this, new Observer<String>() {
+            @Override
+            public void onChanged(String s) {
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
+                                    .setSmallIcon(R.drawable.icon_map)
+                                    .setContentTitle("Parent Maps")
+                                    .setContentText(s)
+                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+
+                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
+                                notificationManager.createNotificationChannel(channel);
+                            }
+
+                            notificationManager.notify(1, builder.build());
+            }
+        });
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Intent usersServiceIntent = new Intent(this, UsersService.class);
+        stopService(usersServiceIntent);
+    }
+
+    @Override
+    protected void onStop() {
+        Intent usersServiceIntent = new Intent(this, UsersService.class);
+        ContextCompat.startForegroundService(this,usersServiceIntent);
+        super.onStop();
     }
 
     public static Intent newIntent(Context context) {

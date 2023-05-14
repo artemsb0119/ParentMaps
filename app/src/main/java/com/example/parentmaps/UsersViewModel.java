@@ -1,12 +1,14 @@
 package com.example.parentmaps;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -22,8 +24,11 @@ public class UsersViewModel extends ViewModel {
     private FirebaseDatabase database;
     private DatabaseReference usersReference;
     private DatabaseReference friendReference;
+    private DatabaseReference notificateReference;
 
     private MutableLiveData<FirebaseUser> user = new MutableLiveData<>();
+
+    private MutableLiveData<String> notificate = new MutableLiveData<>();
     private MutableLiveData<List<User>> users = new MutableLiveData<>();
 
     public UsersViewModel() {
@@ -37,6 +42,7 @@ public class UsersViewModel extends ViewModel {
         database = FirebaseDatabase.getInstance();
         usersReference = database.getReference("Users");
         friendReference = database.getReference("Friends");
+        notificateReference = database.getReference("SendNotificate");
         friendReference.addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
@@ -72,6 +78,17 @@ public class UsersViewModel extends ViewModel {
 
                         }
                     });
+                    notificateReference.child(friends.getUserId1()).addValueEventListener(new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot snapshot) {
+                            notificate.setValue(snapshot.getValue(String.class));
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError error) {
+
+                        }
+                    });
                 }
             }
 
@@ -90,6 +107,9 @@ public class UsersViewModel extends ViewModel {
         return user;
     }
 
+    public MutableLiveData<String> getNotificate() {
+        return notificate;
+    }
     public void logout() {
         auth.signOut();
     }

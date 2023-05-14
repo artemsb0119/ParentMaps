@@ -9,12 +9,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-
-import com.google.firebase.auth.FirebaseUser;
 
 import java.util.List;
 
@@ -32,7 +29,7 @@ public class ChildActivity extends AppCompatActivity {
         setContentView(R.layout.activity_child);
         childId = getIntent().getStringExtra("user");
         initViews();
-        viewModel = new ViewModelProvider(this, new MyViewModelFactory(this.getApplication(),childId))
+        viewModel = new ViewModelProvider(this, new ChildViewModelFactory(this.getApplication(),childId))
                 .get(ChildViewModel.class);
         observeViewModel();
     }
@@ -68,6 +65,11 @@ public class ChildActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         if (item.getItemId() == R.id.item_history) {
             Intent intent = HistoryActivity.newIntent(ChildActivity.this);
+            intent.putExtra("user", childId);
+            startActivity(intent);
+        } else if (item.getItemId() == R.id.item_location) {
+            Intent intent = FavouriteActivity.newIntent(ChildActivity.this);
+            intent.putExtra("user", childId);
             startActivity(intent);
         }
         return super.onOptionsItemSelected(item);
