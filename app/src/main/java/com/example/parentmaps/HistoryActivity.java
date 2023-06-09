@@ -44,7 +44,7 @@ public class HistoryActivity extends AppCompatActivity {
         setContentView(R.layout.activity_history);
         childId = getIntent().getStringExtra("user");
 
-
+        mapView = findViewById(R.id.mapview);
         mapKit = MapKitFactory.getInstance();
         mapObjectCollection = mapView.getMap().getMapObjects().addCollection();
 
@@ -63,10 +63,12 @@ public class HistoryActivity extends AppCompatActivity {
                         mapObjectCollection.addPlacemark(point);
                     }
                 }
-                mapView.getMap().move(
-                        new CameraPosition(points.get(points.size()-1), 14.0f, 0.0f, 0.0f),
-                        new Animation(Animation.Type.SMOOTH, 3),
-                        null);
+                if (!points.isEmpty()) {
+                    mapView.getMap().move(
+                            new CameraPosition(points.get(points.size() - 1), 14.0f, 0.0f, 0.0f),
+                            new Animation(Animation.Type.SMOOTH, 3),
+                            null);
+                }
             }
 
             @Override

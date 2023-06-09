@@ -65,22 +65,33 @@ public class UsersService extends Service {
                 for (Friends friends : friend) {
 
                     notificateReference.child(friends.getUserId1()).addValueEventListener(new ValueEventListener() {
+                        private String previousValue; // Предыдущее значение
+
                         @Override
                         public void onDataChange(@NonNull DataSnapshot snapshot) {
-                            notificate.setValue(snapshot.getValue(String.class));
-                            NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
-                                    .setSmallIcon(R.drawable.icon_map)
-                                    .setContentTitle("Parent Maps")
-                                    .setContentText(snapshot.getValue(String.class))
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                            String newValue = snapshot.getValue(String.class);
+                            if (newValue != null) {
+                                if (previousValue == null) {
+                                    previousValue = newValue;
+                                } else if (!newValue.equals(previousValue)) {
+                                    notificate.setValue(newValue);
+                                    NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
+                                            .setSmallIcon(R.drawable.icon_map)
+                                            .setContentTitle("Parent Maps")
+                                            .setContentText(newValue)
+                                            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
-                                notificationManager.createNotificationChannel(channel);
+                                    NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                        NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
+                                        notificationManager.createNotificationChannel(channel);
+                                    }
+
+                                    notificationManager.notify(1, builder.build());
+
+                                    previousValue = newValue; // Обновляем предыдущее значение только в случае изменения
+                                }
                             }
-
-                            notificationManager.notify(1, builder.build());
                         }
 
                         @Override
@@ -88,6 +99,8 @@ public class UsersService extends Service {
 
                         }
                     });
+
+
                 }
             }
 

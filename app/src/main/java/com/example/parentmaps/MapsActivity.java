@@ -89,6 +89,8 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
     private DrivingSession drivingSession;
     private LocationManager locationManager;
     private Point currentLocation;
+
+    private Point currentTask;
     private Point selectedLocation = new Point(0, 0);
     boolean isReachedDestination = false;
     boolean isReachedPoint = false;
@@ -166,14 +168,17 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
                     for (Point point:points) {
                         double distancePoint = distanceBetweenPoints(currentLocation, point);
                         if (distancePoint <0.2 && !isReachedPoint) {
+                            String taskLocation = getAddress(point.getLatitude(),point.getLongitude());
+                            currentTask = point;
                             isReachedPoint = true;
                             friendsReference = database.getReference("SendNotificate").child(currentUserId);
-                            friendsReference.setValue("Пользователь достиг точки");
+                            friendsReference.setValue("Пользователь достиг "+taskLocation);
                         }
-                        if (distancePoint >0.5 && isReachedPoint) {
+                        if (distancePoint >0.5 && isReachedPoint && currentTask==point) {
+                            String taskLocation = getAddress(point.getLatitude(),point.getLongitude());
                             isReachedPoint = false;
                             friendsReference = database.getReference("SendNotificate").child(currentUserId);
-                            friendsReference.setValue("Пользователь отдалился от точки");
+                            friendsReference.setValue("Пользователь отдалился от "+taskLocation);
                         }
                     }
 
@@ -429,6 +434,21 @@ public class MapsActivity extends AppCompatActivity implements GeoObjectTapListe
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String getAddress(double latitude, double longitude) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(latitude, longitude, 1);
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+                String addressString = address.getAddressLine(0);
+                return addressString;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     private double distanceBetweenPoints(Point p1, Point p2) {

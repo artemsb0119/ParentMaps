@@ -77,21 +77,31 @@ public class UsersActivity extends AppCompatActivity {
             }
         });
         viewModel.getNotificate().observe(this, new Observer<String>() {
+            private String previousValue; // Предыдущее значение
+
             @Override
             public void onChanged(String s) {
-                NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
-                                    .setSmallIcon(R.drawable.icon_map)
-                                    .setContentTitle("Parent Maps")
-                                    .setContentText(s)
-                                    .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                if (s != null) {
+                    if (previousValue == null) {
+                        previousValue = s;
+                    } else if (!s.equals(previousValue)) {
+                        NotificationCompat.Builder builder = new NotificationCompat.Builder(getApplicationContext(), "channel_id")
+                                .setSmallIcon(R.drawable.icon_map)
+                                .setContentTitle("Parent Maps")
+                                .setContentText(s)
+                                .setPriority(NotificationCompat.PRIORITY_DEFAULT);
 
-                            NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
-                                notificationManager.createNotificationChannel(channel);
-                            }
+                        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getApplicationContext());
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                            NotificationChannel channel = new NotificationChannel("channel_id", "Channel name", NotificationManager.IMPORTANCE_DEFAULT);
+                            notificationManager.createNotificationChannel(channel);
+                        }
 
-                            notificationManager.notify(1, builder.build());
+                        notificationManager.notify(1, builder.build());
+
+                        previousValue = s; // Обновляем предыдущее значение только в случае изменения
+                    }
+                }
             }
         });
     }
@@ -106,7 +116,7 @@ public class UsersActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         Intent usersServiceIntent = new Intent(this, UsersService.class);
-        ContextCompat.startForegroundService(this,usersServiceIntent);
+        ContextCompat.startForegroundService(this, usersServiceIntent);
         super.onStop();
     }
 
